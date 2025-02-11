@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Metrônomo Online, Simple e Facil de usar, Estude com metrônomo online, andamentos musicais" />
+    <meta name="keywords" content="Metrônomo Online, Simples e Facil de usar, estude com metrônomo, andamentos musicais." />
     <title>Metrônomo Online</title>
     <style>
+        /* Mantemos todos os estilos anteriores */
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -57,11 +58,17 @@
             background-color: #ccc;
             border-radius: 50%;
             margin: 20px auto;
-            transition: background-color 0.1s;
+            transition: all 0.1s;
         }
 
         .active {
             background-color: #4CAF50 !important;
+            transform: scale(1.1);
+        }
+
+        .accent {
+            background-color: #ff4444 !important;
+            transform: scale(1.2);
         }
 
         .andamentos {
@@ -71,22 +78,6 @@
             background-color: #fff;
             border-radius: 10px;
             box-shadow: 0 0 5px rgba(0,0,0,0.1);
-        }
-
-        .andamentos h3 {
-            color: #333;
-            margin-top: 0;
-        }
-
-        .andamentos ul {
-            list-style: none;
-            padding: 0;
-            text-align: left;
-        }
-
-        .andamentos li {
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
         }
     </style>
 </head>
@@ -122,20 +113,42 @@
         let isRunning = false;
         let bpm = 120;
         let timer = null;
+        let beatCounter = 0;
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-        function beep() {
+        function createOscillator(freq, vol, duration) {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
             
-            oscillator.frequency.value = 800;
-            gainNode.gain.value = 0.1;
+            oscillator.frequency.value = freq;
+            gainNode.gain.value = vol;
             
             oscillator.start();
-            setTimeout(() => oscillator.stop(), 100);
+            setTimeout(() => {
+                oscillator.stop();
+                gainNode.disconnect();
+            }, duration);
+        }
+
+        function playBeat() {
+            beatCounter++;
+            
+            // Acento no primeiro tempo de cada 4 batidas
+            if(beatCounter % 4 === 1) {
+                createOscillator(1200, 0.3, 200); // Som forte para o primeiro tempo
+                document.getElementById('indicator').classList.add('accent');
+            } else {
+                createOscillator(800, 0.1, 100); // Som normal para outros tempos
+                document.getElementById('indicator').classList.remove('accent');
+            }
+            
+            document.getElementById('indicator').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('indicator').classList.remove('active');
+            }, 50);
         }
 
         function toggleMetronome() {
@@ -144,22 +157,18 @@
             button.textContent = isRunning ? 'Parar' : 'Iniciar';
             
             if(isRunning) {
+                beatCounter = 0; // Reinicia a contagem
                 runMetronome();
             } else {
                 clearTimeout(timer);
-                document.getElementById('indicator').classList.remove('active');
+                document.getElementById('indicator').className = 'visual-indicator';
             }
         }
 
         function runMetronome() {
             if(!isRunning) return;
             
-            beep();
-            document.getElementById('indicator').classList.add('active');
-            setTimeout(() => {
-                document.getElementById('indicator').classList.remove('active');
-            }, 50);
-            
+            playBeat();
             const interval = 60000 / bpm;
             timer = setTimeout(runMetronome, interval);
         }
